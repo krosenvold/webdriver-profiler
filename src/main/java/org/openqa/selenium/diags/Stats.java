@@ -15,6 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Set;
 import java.util.TreeSet;
@@ -47,7 +51,23 @@ public class Stats {
 
     private void doReport()
     {
-        doReport(  System.out );
+        File file = new File( fileName );
+        try
+        {
+            FileOutputStream fos = new FileOutputStream( file );
+            PrintStream ps = new PrintStream(  fos );
+            doReport(  ps );
+            ps.close();
+            fos.close();
+        }
+        catch ( FileNotFoundException e )
+        {
+            throw new RuntimeException(  e );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException(  e );
+        }
     }
 
     private void doReport(PrintStream out)
