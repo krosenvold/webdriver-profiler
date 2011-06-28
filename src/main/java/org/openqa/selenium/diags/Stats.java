@@ -77,7 +77,7 @@ public class Stats {
         for ( String key : items )
         {
             StatEvent statEvent = eventMap.get(  key );
-            out.println( key + "=" + statEvent);
+            out.println( key + "," + statEvent);
         }
     }
 

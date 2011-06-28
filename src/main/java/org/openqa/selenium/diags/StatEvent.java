@@ -35,6 +35,6 @@ public class StatEvent {
     @Override
     public String toString()
     {
-        return invocationCount.longValue() + "ms";
+        return invocationCount.longValue() + "";
     }
 }
