@@ -37,6 +37,8 @@ public class Stats {
 
     private final AtomicInteger activeBrowsers = new AtomicInteger(  );
 
+    private final AtomicInteger saveFileNumber = new AtomicInteger( 0 );
+
     private final String fileName;
 
 
@@ -51,7 +53,7 @@ public class Stats {
 
     private void doReport()
     {
-        File file = new File( fileName );
+        File file = new File( fileName + saveFileNumber.incrementAndGet() + ".txt");
         try
         {
             FileOutputStream fos = new FileOutputStream( file );

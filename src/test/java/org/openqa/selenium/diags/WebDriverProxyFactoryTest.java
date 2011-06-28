@@ -16,7 +16,7 @@ public class WebDriverProxyFactoryTest
         throws Exception
     {
         FirefoxDriver firefoxDriver = new FirefoxDriver(  );
-        WebDriverProxyFactory webDriverProxyFactory = new WebDriverProxyFactory( "abc.txt" );
+        WebDriverProxyFactory webDriverProxyFactory = new WebDriverProxyFactory( "abc" );
         final WebDriver proxy = webDriverProxyFactory.createProxy( firefoxDriver );
         Assert.assertTrue( proxy instanceof JavascriptExecutor );
         proxy.quit();
