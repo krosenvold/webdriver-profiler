@@ -6,7 +6,7 @@
   <groupId>org.seleniumhq.selenium</groupId>
   <artifactId>webdriver-profiler</artifactId>
   <packaging>jar</packaging>
-  <version>0.9-SNAPSHOT</version>
+  <version>0.9</version>
 
   <dependencies>
     <dependency>

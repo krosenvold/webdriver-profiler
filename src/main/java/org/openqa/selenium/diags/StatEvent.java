@@ -22,10 +22,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StatEvent {
 
+    private final AtomicLong invocationElapsed = new AtomicLong();
     private final AtomicLong invocationCount = new AtomicLong();
 
     public void setComplete( StatEventInstance statEventInstance) {
-        invocationCount.addAndGet( statEventInstance.getElapsed());
+        invocationElapsed.addAndGet( statEventInstance.getElapsed());
+        invocationCount.incrementAndGet();
     }
 
     public StatEventInstance instantiate() {
@@ -35,6 +37,6 @@ public class StatEvent {
     @Override
     public String toString()
     {
-        return invocationCount.longValue() + "";
+        return invocationCount.longValue() + "," + invocationElapsed.longValue();
     }
 }

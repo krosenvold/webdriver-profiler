@@ -6,7 +6,7 @@ Add to your project using:
        &lt;dependency>
           &lt;groupId>org.seleniumhq.selenium</groupId>
           &lt;artifactId>webdriver-diag-proxy</artifactId>
-          &lt;version>0.9-SNAPSHOT</version>
+          &lt;version>0.9</version>
       &lt;/dependency>
 </pre>
 
