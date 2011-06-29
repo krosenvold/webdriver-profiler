@@ -64,7 +64,7 @@ public class Stats {
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
 
         Set<String> items = new TreeSet<String>(itemMap.keySet());
-        out.println("Event, #Invocations, Elapsed(ms)");
+        out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
         for (String key : items) {
             StatEvent statEvent = itemMap.get(key);
             out.println(key + "," + statEvent);

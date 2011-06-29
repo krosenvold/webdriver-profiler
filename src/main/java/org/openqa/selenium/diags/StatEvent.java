@@ -37,6 +37,9 @@ public class StatEvent {
     @Override
     public String toString()
     {
-        return invocationCount.longValue() + "," + invocationElapsed.longValue();
+        final long invocationCount = this.invocationCount.longValue();
+        final long totalElepased = invocationElapsed.longValue();
+        final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
+        return invocationCount + "," + totalElepased + "," + average;
     }
 }
