@@ -4,7 +4,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.seleniumhq.selenium</groupId>
-  <artifactId>webdriver-diag-proxy</artifactId>
+  <artifactId>webdriver-profiler</artifactId>
   <packaging>jar</packaging>
   <version>0.9-SNAPSHOT</version>
 

@@ -26,12 +26,12 @@ import org.openqa.selenium.WebDriver;
 /**
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
  */
-public class WebDriverProxyFactory
+public class ProfilerFactory
 {
     private final Stats stats;
 
 
-    public WebDriverProxyFactory( String fileName )
+    public ProfilerFactory(String fileName)
     {
         this.stats = new Stats( fileName );
     }

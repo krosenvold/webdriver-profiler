@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -23,20 +24,30 @@ import java.util.List;
 /**
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
  */
-public class WebDriverInvocationHandler
-    extends ProxyInvocationHandler<Object>
+public class WebDriverInvocationHandler  implements InvocationHandler
 {
 
-    public WebDriverInvocationHandler( Stats stats, Object underlying )
-    {
-        super( stats, underlying );
+    private final Stats stats;
+    private final Object underlying;
+
+    public WebDriverInvocationHandler(Stats stats, Object underlyingWebDriver) {
+        this.stats = stats;
+        this.underlying = underlyingWebDriver;
     }
 
-    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        final StatEventInstance statEvent = stats.create(method.getName(), args);
+        try {
+            return invokeUnderlying(method, args);
+        } finally {
+            statEvent.complete();
+        }
+    }
+
     protected Object invokeUnderlying( Method method, Object[] args )
         throws IllegalAccessException, InvocationTargetException
     {
-        final Object o = super.invokeUnderlying( method, args );
+        final Object o = method.invoke(underlying, args);
         if ( "findElement".equals( method.getName() ) )
         {
             return createElementProxy( o );
@@ -55,15 +66,15 @@ public class WebDriverInvocationHandler
 
         if ( "quit".equals( method.getName() ) )
         {
-            getStats().quit();
+            stats.quit();
         }
         return o;
     }
 
     private Object createElementProxy( Object o )
     {
-        WebDriverInvocationHandler webElementInvocationHandler = new WebDriverInvocationHandler( getStats(), o );
-        return WebDriverProxyFactory.createProxy( o, webElementInvocationHandler );
+        WebDriverInvocationHandler webElementInvocationHandler = new WebDriverInvocationHandler( stats, o );
+        return ProfilerFactory.createProxy(o, webElementInvocationHandler);
     }
 }
 
