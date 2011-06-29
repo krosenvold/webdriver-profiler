@@ -55,8 +55,10 @@ public class Stats {
             ps.close();
             fos.close();
         } catch (FileNotFoundException e) {
+            e.printStackTrace(System.err);
             throw new RuntimeException(e);
         } catch (IOException e) {
+            e.printStackTrace(System.err);
             throw new RuntimeException(e);
         }
     }
@@ -79,12 +81,13 @@ public class Stats {
         return file;
     }
 
-    private Runnable getReporter() {
-        return new Runnable() {
-            public void run() {
-                doReport();
-            }
-        };
+    class ReportRunnable implements Runnable {
+        public void run() {
+            doReport();
+        }
+    }
+    private ReportRunnable getReporter() {
+        return new ReportRunnable();
     }
 
 
@@ -127,23 +130,24 @@ public class Stats {
     public void quit() {
         final int i = activeBrowsers.decrementAndGet();
         if (i == 0) {
-            Runnable runnable = new Runnable() {
-                public void run() {
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    if (activeBrowsers.get() == 0) {
-                        getReporter().run();
-                    }
-                }
-            };
+            Runnable runnable = new TimedReporter();
             new Thread(runnable).start();
         }
     }
 
 
+    class TimedReporter implements Runnable {
+        public void run() {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            if (activeBrowsers.get() == 0) {
+                getReporter().run();
+            }
+        }
+    }
     public void addWebDriver() {
         activeBrowsers.incrementAndGet();
     }
