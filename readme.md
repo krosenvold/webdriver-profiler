@@ -25,7 +25,8 @@ Using:
 
 
         Use as normally. Full event is recorded to "perfLog0.txt" in this example. The profiler records the log when the
-         close method is called on the factory or 5 seconds after the last browser is called.
+         close method is called on the factory or 5 seconds after the last browser is called (assuming the process lives that long, which
+         I'd normally only guarantee on selenium-server !).
 
 
 The profilerfactory is thread-safe and createProxy can be run multiple times for each WebDriver instance you wish to proxy
