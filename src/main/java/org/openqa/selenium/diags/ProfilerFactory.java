@@ -36,6 +36,11 @@ public class ProfilerFactory
         this.stats = new Stats( fileName );
     }
 
+
+    public void close(){
+        stats.close();
+    }
+
     public WebDriver createProxy( WebDriver underlying )
     {
         stats.addWebDriver();

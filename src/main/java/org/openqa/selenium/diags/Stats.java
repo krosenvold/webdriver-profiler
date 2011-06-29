@@ -15,18 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import org.apache.commons.lang.StringUtils;
+import org.openqa.selenium.By;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.lang.StringUtils;
-
-import org.openqa.selenium.By;
 
 /**
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
@@ -47,18 +45,16 @@ public class Stats {
         this.fileName = fileName;
     }
 
-    public StatEvent create(String methodName, String param){
-        return getOrCreate( methodName + param);
-    }
-
     private void doReport()
     {
         File file = new File( fileName + saveFileNumber.incrementAndGet() + ".txt");
+        Map<String, StatEvent> copy = new HashMap<String, StatEvent>( eventMap);
+        eventMap.clear();
         try
         {
             FileOutputStream fos = new FileOutputStream( file );
             PrintStream ps = new PrintStream(  fos );
-            doReport(  ps );
+            doReport(  ps, copy );
             ps.close();
             fos.close();
         }
@@ -72,17 +68,23 @@ public class Stats {
         }
     }
 
-    private void doReport(PrintStream out)
+    private Runnable getReporter(){
+        return new Runnable() {
+            public void run() {
+                doReport();
+            }
+        };
+    }
+    private void doReport(PrintStream out, Map<String, StatEvent> itemMap)
     {
 
-        Set<String> items = new TreeSet<String>(eventMap.keySet());
+        Set<String> items = new TreeSet<String>(itemMap.keySet());
         for ( String key : items )
         {
-            StatEvent statEvent = eventMap.get(  key );
+            StatEvent statEvent = itemMap.get(  key );
             out.println( key + "," + statEvent);
         }
     }
-
 
 
     public StatEventInstance create(String methodName, Object[] args){
@@ -124,6 +126,19 @@ public class Stats {
     {
         final int i = activeBrowsers.decrementAndGet();
         if (i == 0){
+            Runnable runnable = new Runnable() {
+                public void run() {
+                    try {
+                        Thread.sleep( 5000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if (activeBrowsers.get() == 0){
+                        getReporter().run();
+                    }
+                }
+            };
+            new Thread(runnable).start();
             doReport();
         }
     }
@@ -132,5 +147,9 @@ public class Stats {
     public void addWebDriver()
     {
         activeBrowsers.incrementAndGet();
+    }
+
+    public void close() {
+        getReporter().run();
     }
 }
