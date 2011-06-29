@@ -4,9 +4,9 @@ Add to your project using:
 
 <pre>
        &lt;dependency>
-          &lt;groupId>org.seleniumhq.selenium</groupId>
-          &lt;artifactId>webdriver-diag-proxy</artifactId>
-          &lt;version>0.9</version>
+          &lt;groupId>org.seleniumhq.selenium&lt;/groupId>
+          &lt;artifactId>webdriver-diag-proxy&lt;/artifactId>
+          &lt;version>0.9&lt;/version>
       &lt;/dependency>
 </pre>
 
