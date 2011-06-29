@@ -34,20 +34,11 @@
       <artifactId>json</artifactId>
       <version>20080701</version>
     </dependency>
-
-
     <dependency>
       <groupId>org.seleniumhq.selenium</groupId>
-      <artifactId>client-combined-nodeps</artifactId>
-      <version>${selenium.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>xerces</groupId>
-          <artifactId>xercesImpl</artifactId>
-        </exclusion>
-      </exclusions>
+      <artifactId>selenium-java</artifactId>
+      <version>2.0rc3</version>
     </dependency>
-
   </dependencies>
   <build>
     <pluginManagement>
@@ -60,9 +51,4 @@
     </pluginManagement>
 
   </build>
-
-  <properties>
-    <selenium.version>2.0-fba52c-1</selenium.version>
-  </properties>
-
 </project>
