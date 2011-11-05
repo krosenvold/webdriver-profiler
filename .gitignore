@@ -11,4 +11,6 @@
 target/
 *.orig
 abc*.txt
+.idea
+
 

@@ -35,6 +35,8 @@ public class Stats {
 
     private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
+    private final ConcurrentHashMap<Long, String> seenThreads = new ConcurrentHashMap<Long, String>();
+
     private final String fileName;
   
     private final ThreadLocal<Long> startedAt = new ThreadLocal<Long>();
@@ -131,8 +133,13 @@ public class Stats {
 
     private StatEvent getOrCreate(String key) {
         StatEvent event = new StatEvent();
+        addSeenThread();
         final StatEvent existing = eventMap.get().putIfAbsent(key, event);
         return existing != null ? existing : event;
+    }
+
+    private void addSeenThread() {
+        seenThreads.putIfAbsent(Thread.currentThread().getId(), Thread.currentThread().getName());
     }
 
     private String toKey(By by) {
