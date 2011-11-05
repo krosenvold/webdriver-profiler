@@ -6,7 +6,7 @@
     <groupId>org.rosenvold.webdriver</groupId>
     <artifactId>webdriver-profiler</artifactId>
     <packaging>jar</packaging>
-    <version>0.9</version>
+    <version>0.9-SNAPSHOT</version>
     <description>A profiler for webdriver</description>
     <name>webdriver-profiler</name>
     <url>http://github.com/krosenvold/webdriver-profiler</url>
