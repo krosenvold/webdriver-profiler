@@ -31,26 +31,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Stats {
 
-    private final ConcurrentHashMap<String, StatEvent> eventMap = new ConcurrentHashMap<String, StatEvent>();
-
     private final AtomicInteger activeBrowsers = new AtomicInteger();
 
     private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
     private final String fileName;
   
-    private final long startedAt;
+    private final ThreadLocal<Long> startedAt = new ThreadLocal<Long>();
+    private final ThreadLocal<ConcurrentHashMap<String, StatEvent>> eventMap = new ThreadLocal<ConcurrentHashMap<String, StatEvent>>(){
+      @Override
+      protected ConcurrentHashMap<String, StatEvent> initialValue() {
+        return new ConcurrentHashMap<String, StatEvent>();
+      }
+    };
+
 
 
     public Stats(String fileName) {
         this.fileName = fileName;
-        startedAt = System.currentTimeMillis();
+        startedAt.set(System.currentTimeMillis());
     }
 
     private void doReport() {
         File file = getReportFile();
-        Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap);
-        eventMap.clear();
+        Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap.get());
+        eventMap.get().clear();
         try {
             FileOutputStream fos = new FileOutputStream(file);
             PrintStream ps = new PrintStream(fos);
@@ -68,7 +73,7 @@ public class Stats {
 
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
 
-       long totalElapsed = System.currentTimeMillis() - startedAt;
+       long totalElapsed = System.currentTimeMillis() - startedAt.get();
         long clientSideElapsed = totalElapsed;
         Set<String> items = new TreeSet<String>(itemMap.keySet());
         out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
@@ -78,7 +83,7 @@ public class Stats {
             out.println(key + "," + statEvent);
         }
         out.println("====== Overall runtime characteristics =======");
-        out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + " is within the test fixture itself");
+        out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
     }
 
     private File getReportFile() {
@@ -126,7 +131,7 @@ public class Stats {
 
     private StatEvent getOrCreate(String key) {
         StatEvent event = new StatEvent();
-        final StatEvent existing = eventMap.putIfAbsent(key, event);
+        final StatEvent existing = eventMap.get().putIfAbsent(key, event);
         return existing != null ? existing : event;
     }
 

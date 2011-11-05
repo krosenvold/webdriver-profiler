@@ -21,13 +21,19 @@ limitations under the License.
 public class StatEventInstance {
     private final long startAt = System.currentTimeMillis();
     private final StatEvent type;
+    private final long owningThreadId;
 
     public StatEventInstance(StatEvent type) {
         this.type = type;
+        this.owningThreadId = Thread.currentThread().getId();
     }
 
     public long getElapsed(){
         return System.currentTimeMillis() - startAt;
+    }
+  
+    public long getElapsedForCurrentThread(){
+      return Thread.currentThread().getId() == owningThreadId ? getElapsed() : 0;
     }
 
     public void complete() {

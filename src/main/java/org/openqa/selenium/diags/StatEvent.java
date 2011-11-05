@@ -22,28 +22,39 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class StatEvent {
 
-    private final AtomicLong invocationElapsed = new AtomicLong();
-    private final AtomicLong invocationCount = new AtomicLong();
-
-    public void setComplete( StatEventInstance statEventInstance) {
-        invocationElapsed.addAndGet( statEventInstance.getElapsed());
-        invocationCount.incrementAndGet();
+  private final AtomicLong invocationElapsed = new AtomicLong();
+  private final ThreadLocal<AtomicLong> perThreadInvocationElapsed = new ThreadLocal<AtomicLong>() {
+    @Override
+    protected AtomicLong initialValue() {
+      return new AtomicLong();
     }
+  };
+  private final AtomicLong invocationCount = new AtomicLong();
 
-    public StatEventInstance instantiate() {
-        return new StatEventInstance(this);
-    }
+  public void setComplete(StatEventInstance statEventInstance) {
+    invocationElapsed.addAndGet(statEventInstance.getElapsed());
+    perThreadInvocationElapsed.get().addAndGet( statEventInstance.getElapsedForCurrentThread());
+    invocationCount.incrementAndGet();
+  }
+
+  public StatEventInstance instantiate() {
+    return new StatEventInstance(this);
+  }
 
   public long getInvocationElapsed() {
     return invocationElapsed.get();
   }
 
+  public long getPerThreadInvocationElapsed() {
+    return perThreadInvocationElapsed.get().get();
+  }
+
+
   @Override
-    public String toString()
-    {
-        final long invocationCount = this.invocationCount.longValue();
-        final long totalElepased = invocationElapsed.longValue();
-        final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
-        return invocationCount + "," + totalElepased + "," + average;
-    }
+  public String toString() {
+    final long invocationCount = this.invocationCount.longValue();
+    final long totalElepased = invocationElapsed.longValue();
+    final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
+    return invocationCount + "," + totalElepased + "," + average;
+  }
 }

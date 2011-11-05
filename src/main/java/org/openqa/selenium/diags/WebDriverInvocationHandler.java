@@ -39,6 +39,8 @@ public class WebDriverInvocationHandler  implements InvocationHandler
         final StatEventInstance statEvent = stats.create(method.getName(), args);
         try {
             return invokeUnderlying(method, args);
+        } catch (InvocationTargetException e){
+          throw e.getTargetException();
         } finally {
             statEvent.complete();
         }
