@@ -82,6 +82,8 @@ public class Stats {
         }
         out.println("====== Overall runtime characteristics =======");
         out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
+
+        doPerThreadReport(out, itemMap);
     }
 
     private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
