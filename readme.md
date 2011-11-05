@@ -4,8 +4,8 @@ Add to your project using:
 
 <pre>
        &lt;dependency>
-          &lt;groupId>org.seleniumhq.selenium&lt;/groupId>
-          &lt;artifactId>webdriver-diag-proxy&lt;/artifactId>
+          &lt;groupId>org.rosenvold.webdriver&lt;/groupId>
+          &lt;artifactId>webdriver-profiler&lt;/artifactId>
           &lt;version>0.9&lt;/version>
       &lt;/dependency>
 </pre>
@@ -30,7 +30,3 @@ I'd normally only guarantee on selenium-server !).
 
 
 The profilerfactory is thread-safe and createProxy can be run multiple times for each WebDriver instance you wish to proxy
-
-
-If you are running se2.0 release version you can also embed this:
-java -cp webdriver-profiler-0.9.jar:server-standalone.jar org.openqa.selenium.server.SeleniumServer

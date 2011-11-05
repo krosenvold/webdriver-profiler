@@ -38,10 +38,13 @@ public class Stats {
     private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
     private final String fileName;
+  
+    private final long startedAt;
 
 
     public Stats(String fileName) {
         this.fileName = fileName;
+        startedAt = System.currentTimeMillis();
     }
 
     private void doReport() {
@@ -65,12 +68,17 @@ public class Stats {
 
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
 
+       long totalElapsed = System.currentTimeMillis() - startedAt;
+        long clientSideElapsed = totalElapsed;
         Set<String> items = new TreeSet<String>(itemMap.keySet());
         out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
         for (String key : items) {
             StatEvent statEvent = itemMap.get(key);
+            clientSideElapsed -= statEvent.getInvocationElapsed();
             out.println(key + "," + statEvent);
         }
+        out.println("====== Overall runtime characteristics =======");
+        out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + " is within the test fixture itself");
     }
 
     private File getReportFile() {

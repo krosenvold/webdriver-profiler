@@ -34,7 +34,11 @@ public class StatEvent {
         return new StatEventInstance(this);
     }
 
-    @Override
+  public long getInvocationElapsed() {
+    return invocationElapsed.get();
+  }
+
+  @Override
     public String toString()
     {
         final long invocationCount = this.invocationCount.longValue();
