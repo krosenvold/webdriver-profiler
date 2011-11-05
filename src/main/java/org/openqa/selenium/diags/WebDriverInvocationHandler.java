@@ -43,6 +43,7 @@ public class WebDriverInvocationHandler  implements InvocationHandler
           throw e.getTargetException();
         } finally {
             statEvent.complete();
+            stats.setLastSeenOnThread();
         }
     }
 

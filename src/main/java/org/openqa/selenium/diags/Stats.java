@@ -36,17 +36,13 @@ public class Stats {
     private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
     private final ConcurrentHashMap<Long, String> seenThreads = new ConcurrentHashMap<Long, String>();
+    private final ConcurrentHashMap<Long, Long> startTime = new ConcurrentHashMap<Long, Long>();
+    private final ConcurrentHashMap<Long, Long> lastSeen = new ConcurrentHashMap<Long, Long>();
 
     private final String fileName;
-  
-    private final ThreadLocal<Long> startedAt = new ThreadLocal<Long>();
-    private final ThreadLocal<ConcurrentHashMap<String, StatEvent>> eventMap = new ThreadLocal<ConcurrentHashMap<String, StatEvent>>(){
-      @Override
-      protected ConcurrentHashMap<String, StatEvent> initialValue() {
-        return new ConcurrentHashMap<String, StatEvent>();
-      }
-    };
 
+    private final ThreadLocal<Long> startedAt = new ThreadLocal<Long>();
+    private final ConcurrentHashMap<String, StatEvent> eventMap = new ConcurrentHashMap<String, StatEvent>();
 
 
     public Stats(String fileName) {
@@ -56,8 +52,8 @@ public class Stats {
 
     private void doReport() {
         File file = getReportFile();
-        Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap.get());
-        eventMap.get().clear();
+        Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap);
+        eventMap.clear();
         try {
             FileOutputStream fos = new FileOutputStream(file);
             PrintStream ps = new PrintStream(fos);
@@ -75,7 +71,7 @@ public class Stats {
 
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
 
-       long totalElapsed = System.currentTimeMillis() - startedAt.get();
+        long totalElapsed = System.currentTimeMillis() - startedAt.get();
         long clientSideElapsed = totalElapsed;
         Set<String> items = new TreeSet<String>(itemMap.keySet());
         out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
@@ -88,6 +84,24 @@ public class Stats {
         out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
     }
 
+    private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
+
+        Set<String> items = new TreeSet<String>(itemMap.keySet());
+        out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
+        for (Long threadId : seenThreads.keySet()) {
+            long totalElapsed = lastSeen.get(threadId) - startTime.get(threadId);
+            long clientSideElapsed = totalElapsed;
+            out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") =====");
+            for (String key : items) {
+                StatEvent statEvent = itemMap.get(key);
+                clientSideElapsed -= statEvent.getInvocationElapsed(threadId);
+                out.println(key + "," + statEvent);
+            }
+            out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") runtime Characteristics =====");
+            out.println("This threadTotal elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
+        }
+    }
+
     private File getReportFile() {
         File file;
         do {
@@ -96,18 +110,23 @@ public class Stats {
         return file;
     }
 
+    public void setLastSeenOnThread() {
+        lastSeen.putIfAbsent(Thread.currentThread().getId(), System.currentTimeMillis());
+    }
+
     class ReportRunnable implements Runnable {
         public void run() {
             doReport();
         }
     }
+
     private ReportRunnable getReporter() {
         return new ReportRunnable();
     }
 
 
-
     public StatEventInstance create(String methodName, Object[] args) {
+        startTime.putIfAbsent(Thread.currentThread().getId(), System.currentTimeMillis());
         return getOrCreate(methodName + "#" + getKey(args)).instantiate();
     }
 
@@ -134,7 +153,7 @@ public class Stats {
     private StatEvent getOrCreate(String key) {
         StatEvent event = new StatEvent();
         addSeenThread();
-        final StatEvent existing = eventMap.get().putIfAbsent(key, event);
+        final StatEvent existing = eventMap.putIfAbsent(key, event);
         return existing != null ? existing : event;
     }
 
@@ -168,6 +187,7 @@ public class Stats {
             }
         }
     }
+
     public void addWebDriver() {
         activeBrowsers.incrementAndGet();
     }

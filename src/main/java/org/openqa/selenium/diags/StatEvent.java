@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -23,20 +24,25 @@ import java.util.concurrent.atomic.AtomicLong;
 public class StatEvent {
 
   private final AtomicLong invocationElapsed = new AtomicLong();
-  private final ThreadLocal<AtomicLong> perThreadInvocationElapsed = new ThreadLocal<AtomicLong>() {
-    @Override
-    protected AtomicLong initialValue() {
-      return new AtomicLong();
-    }
-  };
+  private final ConcurrentHashMap<Long, AtomicLong> threadInvocationElapsed = new ConcurrentHashMap<Long, AtomicLong>();
+
   private final AtomicLong invocationCount = new AtomicLong();
 
   public void setComplete(StatEventInstance statEventInstance) {
     invocationElapsed.addAndGet(statEventInstance.getElapsed());
-    perThreadInvocationElapsed.get().addAndGet( statEventInstance.getElapsedForCurrentThread());
+    getCounterForThread().addAndGet( statEventInstance.getElapsedForCurrentThread());
     invocationCount.incrementAndGet();
   }
 
+  private AtomicLong getCounterForThread(){
+      AtomicLong counter = threadInvocationElapsed.get(Thread.currentThread().getId());
+      if (counter== null){
+          counter = new AtomicLong();
+          threadInvocationElapsed.put(Thread.currentThread().getId(), counter);
+      }
+      return counter;
+  }  
+    
   public StatEventInstance instantiate() {
     return new StatEventInstance(this);
   }
@@ -45,8 +51,8 @@ public class StatEvent {
     return invocationElapsed.get();
   }
 
-  public long getPerThreadInvocationElapsed() {
-    return perThreadInvocationElapsed.get().get();
+  public long getInvocationElapsed(Long threadId) {
+    return threadInvocationElapsed.get(threadId).get();
   }
 
 
