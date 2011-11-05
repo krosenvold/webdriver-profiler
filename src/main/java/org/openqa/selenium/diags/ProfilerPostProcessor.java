@@ -18,9 +18,10 @@ limitations under the License.
 import org.openqa.selenium.WebDriver;
 
 /**
+ * Can be hacked into the server to instrument there too.
  * @author Kristian Rosenvold
  */
-public class ProfilerPostProcessor implements org.openqa.selenium.remote.server.WebDriverPostProcessor
+public class ProfilerPostProcessor
 {
 
     public ProfilerPostProcessor()
