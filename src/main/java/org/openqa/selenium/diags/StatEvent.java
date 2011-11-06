@@ -30,7 +30,7 @@ public class StatEvent {
 
   public void setComplete(StatEventInstance statEventInstance) {
     invocationElapsed.addAndGet(statEventInstance.getElapsed());
-    getCounterForThread().addAndGet( statEventInstance.getElapsedForCurrentThread());
+    getCounterForThread().addAndGet( statEventInstance.getElapsedForCurrentThread(Thread.currentThread().getId()));
     invocationCount.incrementAndGet();
   }
 

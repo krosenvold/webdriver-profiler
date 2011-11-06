@@ -32,8 +32,8 @@ public class StatEventInstance {
         return System.currentTimeMillis() - startAt;
     }
   
-    public long getElapsedForCurrentThread(){
-      return Thread.currentThread().getId() == owningThreadId ? getElapsed() : 0;
+    public long getElapsedForCurrentThread(long threadId){
+      return threadId == owningThreadId ? getElapsed() : 0;
     }
 
     public void complete() {

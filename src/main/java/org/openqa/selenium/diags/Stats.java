@@ -70,7 +70,7 @@ public class Stats {
     }
 
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
-
+                                                    q
         long totalElapsed = System.currentTimeMillis() - startedAt.get();
         long clientSideElapsed = totalElapsed;
         Set<String> items = new TreeSet<String>(itemMap.keySet());
