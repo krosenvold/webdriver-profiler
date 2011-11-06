@@ -15,52 +15,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
+ * An event of a given type, all entries across all threads
+ *
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
  */
 public class StatEvent {
+    private final List<StatEventInstance> items = Collections.synchronizedList(new ArrayList<StatEventInstance>());
 
-  private final AtomicLong invocationElapsed = new AtomicLong();
-  private final ConcurrentHashMap<Long, AtomicLong> threadInvocationElapsed = new ConcurrentHashMap<Long, AtomicLong>();
+    public StatEventInstance instantiate() {
+        final StatEventInstance statEventInstance = new StatEventInstance();
+        items.add(statEventInstance);
+        return statEventInstance;
+    }
 
-  private final AtomicLong invocationCount = new AtomicLong();
+    public long getTotalElapsed(){
+        long result = 0;
+        for (StatEventInstance item : items) {
+            result += item.getElapsed();
+        }
+        return result;
+    }
+    public long getTotalElapsed(Long threadId){
+        long result = 0;
+        for (StatEventInstance item : items) {
+            result += item.getElapsed(threadId);
+        }
+        return result;
+    }
 
-  public void setComplete(StatEventInstance statEventInstance) {
-    invocationElapsed.addAndGet(statEventInstance.getElapsed());
-    getCounterForThread().addAndGet( statEventInstance.getElapsedForCurrentThread(Thread.currentThread().getId()));
-    invocationCount.incrementAndGet();
-  }
-
-  private AtomicLong getCounterForThread(){
-      AtomicLong counter = threadInvocationElapsed.get(Thread.currentThread().getId());
-      if (counter== null){
-          counter = new AtomicLong();
-          threadInvocationElapsed.put(Thread.currentThread().getId(), counter);
-      }
-      return counter;
-  }  
-    
-  public StatEventInstance instantiate() {
-    return new StatEventInstance(this);
-  }
-
-  public long getInvocationElapsed() {
-    return invocationElapsed.get();
-  }
-
-  public long getInvocationElapsed(Long threadId) {
-    return threadInvocationElapsed.get(threadId).get();
-  }
-
-
-  @Override
-  public String toString() {
-    final long invocationCount = this.invocationCount.longValue();
-    final long totalElepased = invocationElapsed.longValue();
-    final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
-    return invocationCount + "," + totalElepased + "," + average;
-  }
+    @Override
+    public String toString() {
+        final long invocationCount = items.size();
+        final long totalElepased = getTotalElapsed();
+        final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
+        return invocationCount + "," + totalElepased + "," + average;
+    }
 }

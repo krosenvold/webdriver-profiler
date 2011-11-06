@@ -41,13 +41,11 @@ public class Stats {
 
     private final String fileName;
 
-    private final ThreadLocal<Long> startedAt = new ThreadLocal<Long>();
     private final ConcurrentHashMap<String, StatEvent> eventMap = new ConcurrentHashMap<String, StatEvent>();
 
 
     public Stats(String fileName) {
         this.fileName = fileName;
-        startedAt.set(System.currentTimeMillis());
     }
 
     private void doReport() {
@@ -58,6 +56,7 @@ public class Stats {
             FileOutputStream fos = new FileOutputStream(file);
             PrintStream ps = new PrintStream(fos);
             doReport(ps, copy);
+            doPerThreadReport(ps, copy);
             ps.close();
             fos.close();
         } catch (FileNotFoundException e) {
@@ -69,21 +68,29 @@ public class Stats {
         }
     }
 
+    private long getTotalRuntime(){
+        long result = 0;  
+        for (Long threadId : startTime.keySet()) {
+           Long endTime = lastSeen.get( threadId);
+           long elapsed = endTime - startTime.get( threadId);
+           result += elapsed;
+        }
+        return result;
+    }
+
     private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
-                                                    q
-        long totalElapsed = System.currentTimeMillis() - startedAt.get();
+        long totalElapsed = getTotalRuntime();
         long clientSideElapsed = totalElapsed;
         Set<String> items = new TreeSet<String>(itemMap.keySet());
         out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
         for (String key : items) {
             StatEvent statEvent = itemMap.get(key);
-            clientSideElapsed -= statEvent.getInvocationElapsed();
+            clientSideElapsed -= statEvent.getTotalElapsed();
             out.println(key + "," + statEvent);
         }
-        out.println("====== Overall runtime characteristics =======");
+        out.println("====== Overall runtime characteristics aggregated all threads =======");
         out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
 
-        doPerThreadReport(out, itemMap);
     }
 
     private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
@@ -96,7 +103,7 @@ public class Stats {
             out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") =====");
             for (String key : items) {
                 StatEvent statEvent = itemMap.get(key);
-                clientSideElapsed -= statEvent.getInvocationElapsed(threadId);
+                clientSideElapsed -= statEvent.getTotalElapsed(threadId);
                 out.println(key + "," + statEvent);
             }
             out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") runtime Characteristics =====");

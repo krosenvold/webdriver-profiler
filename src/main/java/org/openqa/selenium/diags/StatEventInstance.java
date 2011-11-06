@@ -16,27 +16,27 @@ limitations under the License.
 */
 
 /**
+ * One statistics event, on a specific thread
  * @author <a href="mailto:kristian.rosenvold@gmail.com">Kristian Rosenvold</a>
  */
 public class StatEventInstance {
     private final long startAt = System.currentTimeMillis();
-    private final StatEvent type;
     private final long owningThreadId;
+    private volatile long endedAt;
 
-    public StatEventInstance(StatEvent type) {
-        this.type = type;
+    public StatEventInstance() {
         this.owningThreadId = Thread.currentThread().getId();
     }
 
     public long getElapsed(){
-        return System.currentTimeMillis() - startAt;
+        return endedAt - startAt;
     }
   
-    public long getElapsedForCurrentThread(long threadId){
+    public long getElapsed(long threadId){
       return threadId == owningThreadId ? getElapsed() : 0;
     }
 
     public void complete() {
-        type.setComplete( this);
+        endedAt = System.currentTimeMillis();
     }
 }
