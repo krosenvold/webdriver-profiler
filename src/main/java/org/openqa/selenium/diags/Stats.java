@@ -116,7 +116,6 @@ public class Stats {
             out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
         }
         out.println("<tr><td colspan='4'><b>====== Overall runtime characteristics aggregated all threads =======</b></td></tr>");
-        out.println("<tr><td colspan='4'><b>====== Overall runtime characteristics aggregated all threads =======</b></td></tr>");
         out.println("<tr><td colspan='4'>Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
                 + "ms is within the test fixture itself</td></tr>");
         tableFooter(out);
