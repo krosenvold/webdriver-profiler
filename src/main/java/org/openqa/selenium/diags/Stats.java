@@ -39,9 +39,9 @@ public class Stats {
 
   private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
-  private final ConcurrentHashMap<String, String> seenThreads = new ConcurrentHashMap<String, String>();
-  private final ConcurrentHashMap<String, Long> startTime = new ConcurrentHashMap<String, Long>();
-  private final ConcurrentHashMap<String, Long> lastSeen = new ConcurrentHashMap<String, Long>();
+  private final ConcurrentHashMap<Thread, String> seenThreads = new ConcurrentHashMap<Thread, String>();
+  private final ConcurrentHashMap<Thread, Long> startTime = new ConcurrentHashMap<Thread, Long>();
+  private final ConcurrentHashMap<Thread, Long> lastSeen = new ConcurrentHashMap<Thread, Long>();
 
   private final String fileName;
 
@@ -76,7 +76,7 @@ public class Stats {
 
   long getTotalRuntime() {
     long result = 0;
-    for (String threadId : seenThreads.keySet()) {
+    for (Thread threadId : seenThreads.keySet()) {
       Long endTime = lastSeen.get(threadId);
       final Long startTime = this.startTime.get(threadId);
       long elapsed = endTime - startTime;
@@ -127,7 +127,7 @@ public class Stats {
   private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
 
     Set<String> items = new TreeSet<String>(itemMap.keySet());
-    for (String threadId : seenThreads.keySet()) {
+    for (Thread threadId : seenThreads.keySet()) {
       tableHEader(out);
       final Long lstSeent = lastSeen.get(threadId);
       final Long startedAt = startTime.get(threadId);
@@ -138,8 +138,8 @@ public class Stats {
       out.println("====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====");
       for (String key : items) {
         StatEvent statEvent = itemMap.get(key);
-        clientSideElapsed -= statEvent.getTotalElapsed(0L);
-        out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
+        clientSideElapsed -= statEvent.getTotalElapsed(threadId.getId());
+        out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells(threadId.getId()) + "</tr>");
       }
       out.println("<tr><td colspan='4'>====== Thread id + " + threadId + "(" + seenThreads.get(threadId)
                   + ") runtime Characteristics =====");
@@ -172,7 +172,7 @@ public class Stats {
   }
 
   public void setLastSeenOnThread() {
-    lastSeen.putIfAbsent(Thread.currentThread().getName(), System.currentTimeMillis());
+    lastSeen.put(Thread.currentThread(), System.currentTimeMillis());
   }
 
   class ReportRunnable implements Runnable {
@@ -188,7 +188,7 @@ public class Stats {
 
 
   public StatEventInstance create(String methodName, Object[] args) {
-    startTime.putIfAbsent(Thread.currentThread().getName(), System.currentTimeMillis());
+    startTime.putIfAbsent(Thread.currentThread(), System.currentTimeMillis());
     return getOrCreate(methodName + "#" + getKey(args)).instantiate();
   }
 
@@ -220,7 +220,7 @@ public class Stats {
   }
 
   private void addSeenThread() {
-    seenThreads.putIfAbsent(Thread.currentThread().getName(), Thread.currentThread().getName());
+    seenThreads.putIfAbsent(Thread.currentThread(), Thread.currentThread().getName());
   }
 
   private String toKey(By by) {

@@ -49,6 +49,14 @@ public class StatEvent {
         return result;
     }
 
+    public long getInvocationCount(Long threadId){
+        long result = 0;
+        for (StatEventInstance item : items) {
+            if (item.isForThread( threadId)) result++;
+        }
+        return result;
+    }
+
     @Override
     public String toString() {
         final long invocationCount = items.size();
@@ -63,6 +71,13 @@ public class StatEvent {
     final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
     return cell(invocationCount) + cell( totalElepased) + cell( average);
   }
+
+    public String getAsTableCells(Long threadId) {
+      final long invocationCount = getInvocationCount(threadId);
+      final long totalElepased = getTotalElapsed(threadId);
+      final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
+      return cell(invocationCount) + cell( totalElepased) + cell( average);
+    }
 
   private String cell(long value) {
     return "<td>" + value + "</td>";

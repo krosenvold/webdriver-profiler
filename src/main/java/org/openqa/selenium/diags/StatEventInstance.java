@@ -32,8 +32,12 @@ public class StatEventInstance {
         return endedAt - startAt;
     }
   
+    public boolean isForThread(long threadId){
+      return threadId == owningThreadId;
+    }
+
     public long getElapsed(long threadId){
-      return threadId == owningThreadId ? getElapsed() : 0;
+      return isForThread(threadId) ? getElapsed() : 0;
     }
 
     public void complete() {
