@@ -80,10 +80,6 @@ public class Stats {
       Long endTime = lastSeen.get(threadId);
       final Long startTime = this.startTime.get(threadId);
       long elapsed = endTime - startTime;
-      System.out.print("RUN:startTime = " + startTime);
-      System.out.print(",endTime = " + endTime);
-      System.out.println("elapsed = " + elapsed);
-
       result += elapsed;
     }
     return result;
@@ -111,15 +107,15 @@ public class Stats {
     long clientSideElapsed = totalElapsed;
     Set<String> items = new TreeSet<String>(itemMap.keySet());
     tableHEader(out);
+      out.println("<tr><td colspan='4'><h2>====== Overall runtime characteristics aggregated all threads =======</h2></td></tr>");
+      out.println("<tr><td colspan='4'>Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
+                  + "ms is within the test fixture itself</td></tr>");
     for (String key : items) {
       StatEvent statEvent = itemMap.get(key);
 
       clientSideElapsed -= statEvent.getTotalElapsed();
       out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
     }
-    out.println("<tr><td colspan='4'>====== Overall runtime characteristics aggregated all threads =======");
-    out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
-                + "ms is within the test fixture itself</td></tr>");
     tableFooter(out);
 
   }
@@ -131,20 +127,16 @@ public class Stats {
       tableHEader(out);
       final Long lstSeent = lastSeen.get(threadId);
       final Long startedAt = startTime.get(threadId);
-      System.out.print("startedAt = " + startedAt);
-      System.out.println(", lstSeent = " + lstSeent);
       long totalElapsed = lstSeent - startedAt;
       long clientSideElapsed = totalElapsed;
-      out.println("====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====");
+      out.println("<tr><td colspan='4'><h3>====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====</h3></td></tr>");
+      out.println("<tr><td colspan='4'>Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
+                    + "ms is within the test fixture itself</td></tr>");
       for (String key : items) {
         StatEvent statEvent = itemMap.get(key);
         clientSideElapsed -= statEvent.getTotalElapsed(threadId.getId());
         out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells(threadId.getId()) + "</tr>");
       }
-      out.println("<tr><td colspan='4'>====== Thread id + " + threadId + "(" + seenThreads.get(threadId)
-                  + ") runtime Characteristics =====");
-      out.println("This threadTotal elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
-                  + "ms is within the test fixture itself</td></tr>");
       tableFooter(out);
     }
   }
