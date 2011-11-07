@@ -18,7 +18,11 @@ limitations under the License.
 import org.apache.commons.lang.StringUtils;
 import org.openqa.selenium.By;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,177 +35,227 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class Stats {
 
-    private final AtomicInteger activeBrowsers = new AtomicInteger();
+  private final AtomicInteger activeBrowsers = new AtomicInteger();
 
-    private final AtomicInteger saveFileNumber = new AtomicInteger(0);
+  private final AtomicInteger saveFileNumber = new AtomicInteger(0);
 
-    private final ConcurrentHashMap<Long, String> seenThreads = new ConcurrentHashMap<Long, String>();
-    private final ConcurrentHashMap<Long, Long> startTime = new ConcurrentHashMap<Long, Long>();
-    private final ConcurrentHashMap<Long, Long> lastSeen = new ConcurrentHashMap<Long, Long>();
+  private final ConcurrentHashMap<String, String> seenThreads = new ConcurrentHashMap<String, String>();
+  private final ConcurrentHashMap<String, Long> startTime = new ConcurrentHashMap<String, Long>();
+  private final ConcurrentHashMap<String, Long> lastSeen = new ConcurrentHashMap<String, Long>();
 
-    private final String fileName;
+  private final String fileName;
 
-    private final ConcurrentHashMap<String, StatEvent> eventMap = new ConcurrentHashMap<String, StatEvent>();
+  private final ConcurrentHashMap<String, StatEvent> eventMap = new ConcurrentHashMap<String, StatEvent>();
 
 
-    public Stats(String fileName) {
-        this.fileName = fileName;
+  public Stats(String fileName) {
+    this.fileName = fileName;
+  }
+
+  private void doReport() {
+    File file = getReportFile();
+    Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap);
+    eventMap.clear();
+    try {
+      FileOutputStream fos = new FileOutputStream(file);
+      PrintStream ps = new PrintStream(fos);
+      ps.print("<html><body>");
+      doReportForAll(ps, copy);
+      doPerThreadReport(ps, copy);
+      ps.print("</body></html>");
+      ps.close();
+      fos.close();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      e.printStackTrace(System.err);
+      throw new RuntimeException(e);
     }
+  }
 
-    private void doReport() {
-        File file = getReportFile();
-        Map<String, StatEvent> copy = new HashMap<String, StatEvent>(eventMap);
-        eventMap.clear();
-        try {
-            FileOutputStream fos = new FileOutputStream(file);
-            PrintStream ps = new PrintStream(fos);
-            doReport(ps, copy);
-            doPerThreadReport(ps, copy);
-            ps.close();
-            fos.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace(System.err);
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
-            throw new RuntimeException(e);
+  long getTotalRuntime() {
+    long result = 0;
+    for (String threadId : seenThreads.keySet()) {
+      Long endTime = lastSeen.get(threadId);
+      final Long startTime = this.startTime.get(threadId);
+      long elapsed = endTime - startTime;
+      System.out.print("RUN:startTime = " + startTime);
+      System.out.print(",endTime = " + endTime);
+      System.out.println("elapsed = " + elapsed);
+
+      result += elapsed;
+    }
+    return result;
+  }
+
+  long getRunTime(Long threadId){
+    long result = 0;
+    for (StatEvent key : eventMap.values()) {
+      result += key.getTotalElapsed( threadId);
+    }
+    return result;
+  }
+
+  long getRunTime(){
+    long result = 0;
+    for (StatEvent key : eventMap.values()) {
+      result += key.getTotalElapsed();
+    }
+    return result;
+  }
+
+  
+  private void doReportForAll(PrintStream out, Map<String, StatEvent> itemMap) {
+    long totalElapsed = getTotalRuntime();
+    long clientSideElapsed = totalElapsed;
+    Set<String> items = new TreeSet<String>(itemMap.keySet());
+    tableHEader(out);
+    for (String key : items) {
+      StatEvent statEvent = itemMap.get(key);
+
+      clientSideElapsed -= statEvent.getTotalElapsed();
+      out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
+    }
+    out.println("<tr><td colspan='4'>====== Overall runtime characteristics aggregated all threads =======");
+    out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
+                + "ms is within the test fixture itself</td></tr>");
+    tableFooter(out);
+
+  }
+
+  private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
+
+    Set<String> items = new TreeSet<String>(itemMap.keySet());
+    for (String threadId : seenThreads.keySet()) {
+      tableHEader(out);
+      final Long lstSeent = lastSeen.get(threadId);
+      final Long startedAt = startTime.get(threadId);
+      System.out.print("startedAt = " + startedAt);
+      System.out.println(", lstSeent = " + lstSeent);
+      long totalElapsed = lstSeent - startedAt;
+      long clientSideElapsed = totalElapsed;
+      out.println("====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====");
+      for (String key : items) {
+        StatEvent statEvent = itemMap.get(key);
+        clientSideElapsed -= statEvent.getTotalElapsed(0L);
+        out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
+      }
+      out.println("<tr><td colspan='4'>====== Thread id + " + threadId + "(" + seenThreads.get(threadId)
+                  + ") runtime Characteristics =====");
+      out.println("This threadTotal elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
+                  + "ms is within the test fixture itself</td></tr>");
+      tableFooter(out);
+    }
+  }
+
+  private String trim(String key) {
+    return key.length() > 80 ? key.substring(0, 80) : key;
+  }
+
+  private void tableHEader(PrintStream out) {
+    out.println(
+        "<table><tr><th>Event</th><th>#Invocations</th><th>Elapsed(ms)</th><th>Average (ms)</th><tr>");
+  }
+
+  private void tableFooter(PrintStream out) {
+    out.println("</table>");
+  }
+
+
+  private File getReportFile() {
+    File file;
+    do {
+      file = new File(fileName + saveFileNumber.incrementAndGet() + ".html");
+    } while (file.exists());
+    return file;
+  }
+
+  public void setLastSeenOnThread() {
+    lastSeen.putIfAbsent(Thread.currentThread().getName(), System.currentTimeMillis());
+  }
+
+  class ReportRunnable implements Runnable {
+
+    public void run() {
+      doReport();
+    }
+  }
+
+  private ReportRunnable getReporter() {
+    return new ReportRunnable();
+  }
+
+
+  public StatEventInstance create(String methodName, Object[] args) {
+    startTime.putIfAbsent(Thread.currentThread().getName(), System.currentTimeMillis());
+    return getOrCreate(methodName + "#" + getKey(args)).instantiate();
+  }
+
+  private String getKey(Object[] args) {
+    StringBuilder result = new StringBuilder();
+    if (args == null) {
+      return "null";
+    }
+    for (Object arg : args) {
+      if (arg instanceof By) {
+        result.append(toKey((By) arg));
+      } else if (arg instanceof Object[]) {
+        Object[] argArray = (Object[]) arg;
+        if (argArray.length > 0) {
+          // Maybe need to do something about arrays...
         }
+      } else {
+        result.append(arg != null ? arg.toString() : "null");
+      }
     }
+    return result.toString();
+  }
 
-    private long getTotalRuntime(){
-        long result = 0;  
-        for (Long threadId : startTime.keySet()) {
-           Long endTime = lastSeen.get( threadId);
-           long elapsed = endTime - startTime.get( threadId);
-           result += elapsed;
-        }
-        return result;
+  private StatEvent getOrCreate(String key) {
+    StatEvent event = new StatEvent();
+    addSeenThread();
+    final StatEvent existing = eventMap.putIfAbsent(key, event);
+    return existing != null ? existing : event;
+  }
+
+  private void addSeenThread() {
+    seenThreads.putIfAbsent(Thread.currentThread().getName(), Thread.currentThread().getName());
+  }
+
+  private String toKey(By by) {
+    final String s = by.toString();
+    return StringUtils.substringBefore(s, ":");
+  }
+
+  public void quit() {
+    final int i = activeBrowsers.decrementAndGet();
+    if (i == 0) {
+      Runnable runnable = new TimedReporter();
+      new Thread(runnable).start();
     }
-
-    private void doReport(PrintStream out, Map<String, StatEvent> itemMap) {
-        long totalElapsed = getTotalRuntime();
-        long clientSideElapsed = totalElapsed;
-        Set<String> items = new TreeSet<String>(itemMap.keySet());
-        out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
-        for (String key : items) {
-            StatEvent statEvent = itemMap.get(key);
-            clientSideElapsed -= statEvent.getTotalElapsed();
-            out.println(key + "," + statEvent);
-        }
-        out.println("====== Overall runtime characteristics aggregated all threads =======");
-        out.println("Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
-
-    }
-
-    private void doPerThreadReport(PrintStream out, Map<String, StatEvent> itemMap) {
-
-        Set<String> items = new TreeSet<String>(itemMap.keySet());
-        out.println("Event, #Invocations, Elapsed(ms), Average (ms)");
-        for (Long threadId : seenThreads.keySet()) {
-            long totalElapsed = lastSeen.get(threadId) - startTime.get(threadId);
-            long clientSideElapsed = totalElapsed;
-            out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") =====");
-            for (String key : items) {
-                StatEvent statEvent = itemMap.get(key);
-                clientSideElapsed -= statEvent.getTotalElapsed(threadId);
-                out.println(key + "," + statEvent);
-            }
-            out.println("====== Thread id + "+  threadId + "(" + seenThreads.get(threadId)+ ") runtime Characteristics =====");
-            out.println("This threadTotal elapsed " + totalElapsed + "ms, of which " + clientSideElapsed + "ms is within the test fixture itself");
-        }
-    }
-
-    private File getReportFile() {
-        File file;
-        do {
-            file = new File(fileName + saveFileNumber.incrementAndGet() + ".txt");
-        } while (file.exists());
-        return file;
-    }
-
-    public void setLastSeenOnThread() {
-        lastSeen.putIfAbsent(Thread.currentThread().getId(), System.currentTimeMillis());
-    }
-
-    class ReportRunnable implements Runnable {
-        public void run() {
-            doReport();
-        }
-    }
-
-    private ReportRunnable getReporter() {
-        return new ReportRunnable();
-    }
+  }
 
 
-    public StatEventInstance create(String methodName, Object[] args) {
-        startTime.putIfAbsent(Thread.currentThread().getId(), System.currentTimeMillis());
-        return getOrCreate(methodName + "#" + getKey(args)).instantiate();
-    }
+  class TimedReporter implements Runnable {
 
-    private String getKey(Object[] args) {
-        StringBuilder result = new StringBuilder();
-        if (args == null) {
-            return "null";
-        }
-        for (Object arg : args) {
-            if (arg instanceof By) {
-                result.append(toKey((By) arg));
-            } else if (arg instanceof Object[]) {
-                Object[] argArray = (Object[]) arg;
-                if (argArray.length > 0) {
-                    // Maybe need to do something about arrays...
-                }
-            } else {
-                result.append(arg != null ? arg.toString() : "null");
-            }
-        }
-        return result.toString();
-    }
-
-    private StatEvent getOrCreate(String key) {
-        StatEvent event = new StatEvent();
-        addSeenThread();
-        final StatEvent existing = eventMap.putIfAbsent(key, event);
-        return existing != null ? existing : event;
-    }
-
-    private void addSeenThread() {
-        seenThreads.putIfAbsent(Thread.currentThread().getId(), Thread.currentThread().getName());
-    }
-
-    private String toKey(By by) {
-        final String s = by.toString();
-        return StringUtils.substringBefore(s, ":");
-    }
-
-    public void quit() {
-        final int i = activeBrowsers.decrementAndGet();
-        if (i == 0) {
-            Runnable runnable = new TimedReporter();
-            new Thread(runnable).start();
-        }
-    }
-
-
-    class TimedReporter implements Runnable {
-        public void run() {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            if (activeBrowsers.get() == 0) {
-                getReporter().run();
-            }
-        }
-    }
-
-    public void addWebDriver() {
-        activeBrowsers.incrementAndGet();
-    }
-
-    public void close() {
+    public void run() {
+      try {
+        Thread.sleep(5000);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+      if (activeBrowsers.get() == 0) {
         getReporter().run();
+      }
     }
+  }
+
+  public void addWebDriver() {
+    activeBrowsers.incrementAndGet();
+  }
+
+  public void close() {
+    getReporter().run();
+  }
 }

@@ -26,8 +26,9 @@ import java.util.List;
  */
 public class StatEvent {
     private final List<StatEventInstance> items = Collections.synchronizedList(new ArrayList<StatEventInstance>());
+  private Object asTableCells;
 
-    public StatEventInstance instantiate() {
+  public StatEventInstance instantiate() {
         final StatEventInstance statEventInstance = new StatEventInstance();
         items.add(statEventInstance);
         return statEventInstance;
@@ -55,4 +56,15 @@ public class StatEvent {
         final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
         return invocationCount + "," + totalElepased + "," + average;
     }
+
+  public String getAsTableCells() {
+    final long invocationCount = items.size();
+    final long totalElepased = getTotalElapsed();
+    final long average = invocationCount > 0 ? totalElepased / invocationCount : 0;
+    return cell(invocationCount) + cell( totalElepased) + cell( average);
+  }
+
+  private String cell(long value) {
+    return "<td>" + value + "</td>";
+  }
 }
