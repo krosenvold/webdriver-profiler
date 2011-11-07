@@ -115,7 +115,8 @@ public class Stats {
             clientSideElapsed -= statEvent.getTotalElapsed();
             out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells() + "</tr>");
         }
-        out.println("<tr><td colspan='4'><h2>====== Overall runtime characteristics aggregated all threads =======</h2></td></tr>");
+        out.println("<tr><td colspan='4'><b>====== Overall runtime characteristics aggregated all threads =======</b></td></tr>");
+        out.println("<tr><td colspan='4'><b>====== Overall runtime characteristics aggregated all threads =======</b></td></tr>");
         out.println("<tr><td colspan='4'>Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
                 + "ms is within the test fixture itself</td></tr>");
         tableFooter(out);
@@ -137,7 +138,7 @@ public class Stats {
                 clientSideElapsed -= statEvent.getTotalElapsed(threadId.getId());
                 out.println("<tr><td>" + trim(key) + "</td>" + statEvent.getAsTableCells(threadId.getId()) + "</tr>");
             }
-            out.println("<tr><td colspan='4'><h3>====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====</h3></td></tr>");
+            out.println("<tr><td colspan='4'><b>====== Thread id + " + threadId + "(" + seenThreads.get(threadId) + ") =====</b></td></tr>");
             out.println("<tr><td colspan='4'>Total elapsed " + totalElapsed + "ms, of which " + clientSideElapsed
                     + "ms is within the test fixture itself</td></tr>");
             tableFooter(out);
@@ -159,7 +160,7 @@ public class Stats {
     }
 
     private void tableFooter(PrintStream out) {
-        out.println("</table>");
+        out.println("</table><hr/>");
     }
 
 
